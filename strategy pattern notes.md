@@ -126,3 +126,11 @@ ctx.perform(); // Output: Executing Strategy A
 ctx.setStrategy(new StrategyB());
 ctx.perform(); // Output: Executing Strategy B
 ```
+
+---
+
+### 📝 Note
+
+* Strategy Pattern allows you to **encapsulate a family of behaviors** and **swap them at runtime**.
+* But *how* you get or decide which strategy to use — that’s **not Strategy Pattern’s job** (you may use Factory pattern for that).
+* In other words **Strategy** handles **how** behavior is done dynamically; **Factory** handles **which** behavior implementation gets created and provided
