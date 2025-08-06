@@ -8,6 +8,7 @@ The **Strategy Pattern** is a behavioral design pattern that:
 * Defines a family of interchangeable algorithms or behaviors.
 * Encapsulates each one in its own class.
 * Lets the context (i.e., the object using the behavior) switch between them at runtime.
+* It supports composition (HAS-A) over inheritance (IS-A)
 
 This avoids hardcoding behavior and gives you flexibility to change how objects behave dynamically.
 
