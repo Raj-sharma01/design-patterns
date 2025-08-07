@@ -277,3 +277,73 @@ public class TimesNow implements NewsLetter {
 | Topic-Based               | Notify only interested observers | Scalable for categorized updates            |
 
 
+---
+
+## Additional Insights from Head First Design Patterns
+
+### 1. Separation of Concerns and Reusability
+- The Observer pattern **strongly decouples** the subject and observers.
+- Observers can be **reused with different subjects** without modification.
+- This **flexibility** allows observers to evolve independently of the subject’s implementation.
+
+### 2. Push vs Pull Model Trade-offs (Deeper Explanation)
+- **Push Model:**
+  - Subject pushes all relevant state data to observers at notify time.
+  - Pros: Observers get everything needed immediately.
+  - Cons: May send unnecessary data; observers cannot control what they receive.
+- **Pull Model:**
+  - Subject notifies observers a change occurred.
+  - Observers fetch (pull) only the data they need.
+  - Pros: Reduced redundancy, more flexible for observers.
+  - Cons: Tighter coupling; observers must know how to query subject state.
+
+```java
+class WeatherDisplayPush implements Observer {
+    private float temperature;
+    private float humidity;
+
+    @Override
+    public void update(float temperature, float humidity, float windSpeed, String windDirection) {
+        this.temperature = temperature;
+        this.humidity = humidity;
+        display();
+    }
+
+    public void display() {
+        System.out.println("Push Display -> Temperature: " + temperature + "°C, Humidity: " + humidity + "%");
+    }
+}
+```
+
+```java
+class WeatherDisplayPull implements ObserverPull {
+    private WeatherStationPull weatherStation;
+
+    public WeatherDisplayPull(WeatherStationPull weatherStation) {
+        this.weatherStation = weatherStation;
+    }
+
+    @Override
+    public void update() {
+        // Observer pulls only required data from subject
+        float temperature = weatherStation.getTemperature();  // Observer must know subject's API => tighter coupling
+        float humidity = weatherStation.getHumidity();
+        display(temperature, humidity);
+    }
+
+    public void display(float temperature, float humidity) {
+        System.out.println("Pull Display -> Temperature: " + temperature + "°C, Humidity: " + humidity + "%");
+    }
+}
+```
+## Coupling Comparison
+
+| Aspect | Push Model | Pull Model |
+| :-- | :-- | :-- |
+| **Coupling Degree** | Looser coupling:<br>- Subject controls what data is sent.<br>- Observer only needs to implement `update` with known data signature.<br>- Observer does not depend on subject’s interface directly. | Tighter coupling:<br>- Observer must know and depend on subject’s interface to pull specific data.<br>- Observer needs a reference to the subject.<br>- Changes in the subject’s data API may break observers. |
+| **Observer Complexity** | Simpler: just handle incoming data in update method. | More complex: observer queries subject for needed data. |
+| **Subject’s Role** | More control: decides what data to push, can filter. | Less control: only signals change; observers decide what to pull. |
+| **Flexibility for Observers** | Less flexible (receive all pushed info). | More flexible (observers choose what to consume). |
+| **Flexibility to data changes** | Less flexible; all observers break if update signature changes | More flexible; observers unaffected unless they use new data |
+| **Adding New Data Fields** | Subject may break observers if signature changes (argument list). | Adding new fields less likely to break observers if interface extends well. |
+| **Extensibility** | Less extensible for very dynamic data; signature must match. | More extensible; observers can pull extended info as it becomes available. |
