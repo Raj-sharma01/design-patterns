@@ -2,7 +2,8 @@
 
 ## 1. Why Factories? (Motivation)
 
-* In normal code, the client directly creates objects using `new`.
+In normal code, the client directly creates objects using `new`.
+
 * This couples the client to concrete classes, which **violates the Dependency Inversion Principle (DIP)**:
 
   * High-level modules (client code) depend on low-level details (concrete classes).
@@ -10,10 +11,12 @@
 
 **Factory Pattern**: Instead of letting the client decide *which concrete class* to instantiate, we delegate that decision to a separate component (a factory).
 
-* This centralizes object creation.
+* Centralizes object creation.
 * Reduces duplication (`new PayPalPayment()` sprinkled everywhere).
 * Localizes OCP violations (ideally in a single predictable place).
 * Makes testing easier (swap implementations without changing clients).
+* Handles **shared workflows** (e.g., logging, validation, setup before returning the object).
+* Encapsulates **complex preparation logic** needed before an object is usable (instead of pushing it into the client).
 
 ---
 
@@ -47,20 +50,13 @@ class PaymentFactory {
         throw new IllegalArgumentException("Unknown payment type");
     }
 }
-
-// Client
-public class Client {
-    public static void main(String[] args) {
-        Payment payment = PaymentFactory.createPayment("paypal");
-        payment.pay(100);
-    }
-}
 ```
 
 **Pros:**
 
 * Centralizes creation.
 * Removes `new` from client code.
+* Good when object creation needs extra setup.
 
 **Cons:**
 
@@ -78,20 +74,6 @@ Instead of a single static factory, we define a **creator class** with a method 
 Each subclass decides what to instantiate.
 
 ```java
-// Product
-interface Pizza {
-    void prepare();
-}
-
-// Concrete products
-class MargheritaPizza implements Pizza {
-    public void prepare() { System.out.println("Preparing Margherita Pizza"); }
-}
-class PepperoniPizza implements Pizza {
-    public void prepare() { System.out.println("Preparing Pepperoni Pizza"); }
-}
-
-// Creator
 abstract class PizzaStore {
     public abstract Pizza createPizza(); // factory method
 
@@ -100,74 +82,35 @@ abstract class PizzaStore {
         pizza.prepare();
     }
 }
-
-// Concrete creators
-class MargheritaPizzaStore extends PizzaStore {
-    public Pizza createPizza() { return new MargheritaPizza(); }
-}
-class PepperoniPizzaStore extends PizzaStore {
-    public Pizza createPizza() { return new PepperoniPizza(); }
-}
-
-// Client
-public class Client {
-    public static void main(String[] args) {
-        PizzaStore store = new MargheritaPizzaStore();
-        store.orderPizza();
-    }
-}
 ```
 
-**Pros:**
-
-* Adding a new pizza = new subclass, **no changes to existing classes** → closer to OCP.
-* Client code depends only on `PizzaStore`, not on concrete `Pizza`.
-
-**Cons:**
-
-* One subclass per product type → can explode in number of classes.
-* Choosing *which factory subclass to use* is still a problem (often solved by DI).
+* **Pros:** New pizza = new subclass, no changes to existing classes → closer to OCP.
+* **Cons:** Explosion of subclasses, client still needs to know *which* factory to use.
 
 ---
 
 ### (b) Parameterized Factory Method
 
-The factory method itself accepts a parameter to decide which product to create.
+Factory method takes an argument to decide product.
 
 ```java
-abstract class PizzaStore {
-    public abstract Pizza createPizza(String type);
-
-    public void orderPizza(String type) {
-        Pizza pizza = createPizza(type);
-        pizza.prepare();
-    }
-}
-
 class SimplePizzaStore extends PizzaStore {
     public Pizza createPizza(String type) {
         if (type.equals("margherita")) return new MargheritaPizza();
         if (type.equals("pepperoni")) return new PepperoniPizza();
-        throw new IllegalArgumentException("Unknown pizza type");
+        throw new IllegalArgumentException("Unknown type");
     }
 }
 ```
 
-**Pros:**
-
-* More flexible, fewer subclasses.
-* Client code stays clean.
-
-**Cons:**
-
-* Brings back `if/else` inside the factory method → partial OCP violation.
-* Often improved by **using a registry or map** instead of hardcoded `if/else`.
+* **Pros:** Fewer subclasses, cleaner clients.
+* **Cons:** Brings back `if/else` → partial OCP violation.
 
 ---
 
 ## 4. Registry + OCP
 
-Instead of hardcoding, use a map of keys to constructors (localizing OCP violation).
+Use a map instead of `if/else`.
 
 ```java
 class RegistryPizzaStore extends PizzaStore {
@@ -186,30 +129,22 @@ class RegistryPizzaStore extends PizzaStore {
 }
 ```
 
-**Note:** Adding new entries *still requires editing this class*.
-
-* **Not “pure OCP”**.
-* Can become more OCP-friendly if the registry is externalized (e.g., loaded via config or plugins).
+* More maintainable than `if/else`.
+* Still not “pure OCP” since registry needs editing.
 
 ---
 
 ## 5. Factories, OCP & DIP
 
-* **DIP:** Client depends on abstractions (`Payment`, `Pizza`), not concrete classes.
-* **OCP:** Factories *localize* object-creation logic so existing code changes are minimized.
-
-  * Pure OCP: new products added without editing existing code (possible with plugin systems/config-driven registries).
-  * Semi-OCP: registry/if-else is centralized in one file, not spread everywhere.
+* **DIP:** Client depends on abstractions (`Payment`, `Pizza`) not concrete classes.
+* **OCP:** Factories *localize* object-creation logic so code changes are minimized.
 
 ---
 
 ## 6. Dependency Injection & Factories
 
-* Choosing **which factory to use** is often handled by **Dependency Injection (DI)** frameworks.
-* Example:
-
-  * Instead of hardcoding `new PayPalPayment()`, DI injects the right factory or object based on configuration.
-* This solves the problem of *who decides the factory itself*.
+* Choosing *which factory to use* is often left to **Dependency Injection frameworks**.
+* Example: DI container injects `PayPalPayment` at runtime instead of hardcoding it.
 
 ---
 
@@ -232,6 +167,4 @@ class RegistryPizzaStore extends PizzaStore {
 3. How is **Simple Factory with interface** any different from **Parameterized Factory Method**?
 4. In practice, do registries really make code OCP-compliant, or just *centralize the violation*?
 5. When is it worth the overhead of factories, and when is `new` perfectly fine?
-
----
-
+6. Should I think of factories more as a **DIP/OCP enabler**, or as a **practical place to handle setup, workflow, and prep logic**?
